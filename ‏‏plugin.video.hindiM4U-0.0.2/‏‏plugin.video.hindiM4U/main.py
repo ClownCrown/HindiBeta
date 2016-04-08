@@ -38,10 +38,11 @@ def get_categories():
     """
     gPageNumber = 1
     siteReq = requests.get("http://www.hindilinks4u.to/")
-    siteSoup = BeautifulSoup(siteReq.content)
+    siteSoup = BeautifulSoup(siteReq.content, "html.parser")
     cats = (siteSoup.find("div", class_="widget widget_categories"))
     for catslink in cats.find_all("li"):
-        catagories.append([catslink.contents[0].text, catslink.contents[0].get("href")])
+        link = catslink.contents[0].get("href")
+        catagories.append([link[link.rfind("/")+1:], link])
         #CatsWithHrefs[catslink.contents[0].text] = catslink.contents[0].get("href")
     #print CatsWithHrefs.keys()
     siteReq.close()
@@ -51,11 +52,12 @@ def get_links(html,page):
     linksList = []
     if page != 0:
         html = html + "/page/" + str(page)
-    print "Starting to load movies"
+    print "Starting to load movies from"
+    print html
     try:
         r = requests.get(html)
         if(r.status_code == 200):
-            soup = BeautifulSoup(r.content)
+            soup = BeautifulSoup(r.content, "html.parser")
             pageLink = soup.find("a",class_="nextpostslink").attrs["href"][soup.find("a",class_="nextpostslink").attrs["href"].rfind("/")+1:]
             for link in soup.find_all("a", class_="clip-link"):
                 if link.get("title").find("In Hindi") == -1:
@@ -67,10 +69,10 @@ def get_links(html,page):
                     #for every link, get movie link from the site
                     htm = moviedic["ref"]
                     rlink = requests.get(htm)
-                    souplink = BeautifulSoup(rlink.content)
+                    souplink = BeautifulSoup(rlink.content, "html.parser")
                     movieLink = souplink.iframe['src']
                     movieCon = requests.get(movieLink)
-                    soupMov = BeautifulSoup(movieCon.content)
+                    soupMov = BeautifulSoup(movieCon.content, "html.parser")
                     try:
                         moviedic["video"] = soupMov.video.source["src"]
                         # print moviedic["name"]
@@ -198,7 +200,7 @@ def list_videos(category,page):
         list_item.setProperty('IsPlayable', 'true')
         # Create a URL for the plugin recursive callback.
         # Example: plugin://plugin.video.example/?action=play&video=http://www.vidsplay.com/vids/crab.mp4
-        url = '{0}?action=play&video={1}'.format(_url, video['video'])
+        url = '{0}?action=play&video={1}'.format(_url, video['video']).decode('utf-8')
         # Add the list item to a virtual Kodi folder.
         # is_folder = False means that this item won't open any sub-list.
         is_folder = False
@@ -229,7 +231,7 @@ def play_video(path):
     :param path: str
     """
     # Create a playable item with a path to play.
-    play_item = xbmcgui.ListItem(path=path)
+    play_item = xbmcgui.ListItem(path=path.decode('utf-8'))
     # Pass the item to the Kodi player.
     xbmcplugin.setResolvedUrl(_handle, True, listitem=play_item)
 
