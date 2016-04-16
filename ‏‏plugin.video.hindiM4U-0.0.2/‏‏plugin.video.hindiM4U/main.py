@@ -21,8 +21,33 @@ args = urlparse.parse_qs(sys.argv[2][1:])
 CatsWithHrefs = {}
 catagories = []
 
+def smartUnicode(s):
+    if not s:
+        return ''
+    try:
+        if not isinstance(s, basestring):
+            if hasattr(s, '__unicode__'):
+                s = unicode(s)
+            else:
+                s = unicode(str(s), 'UTF-8')
+        elif not isinstance(s, unicode):
+            s = unicode(s, 'UTF-8')
+    except:
+        if not isinstance(s, basestring):
+            if hasattr(s, '__unicode__'):
+                s = unicode(s)
+            else:
+                s = unicode(str(s), 'ISO-8859-1')
+        elif not isinstance(s, unicode):
+            s = unicode(s, 'ISO-8859-1')
+    return s
+
+def smartUTF8(s):
+    return smartUnicode(s).encode('utf-8')
+
 def addDir(name,url,mode,iconimage,PageNumber):
     u=sys.argv[0]+"?url="+ url +"&action="+str(mode)+"&name="+name+"&page="+str(PageNumber)
+    u= smartUTF8(u).decode('utf-8')
     liz=xbmcgui.ListItem(unicode(name), iconImage="DefaultFolder.png",thumbnailImage=iconimage)
     liz.setInfo( type="Video", infoLabels={ "Title": name, 'year':"" })
     ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=True)
@@ -156,6 +181,7 @@ def list_categories():
         # Create a URL for the plugin recursive callback.
         # Example: plugin://plugin.video.example/?action=listing&category=Animals
         url = '{0}?action=listing&category={1}'.format(_url, category[0])
+        url = smartUTF8(url).decode('utf-8')
         # is_folder = True means that this item opens a sub-list of lower level items.
         is_folder = True
         # Add our item to the listing as a 3-element tuple.
@@ -182,10 +208,16 @@ def list_videos(category,page):
     else:
         print "move to the next page"
         videos = get_videos(category, page)
+        print videos
     # Create a list for our items.
     listing = []
     # Iterate through videos.
-    page = videos[0]['page']
+    try:
+        page = videos[0]['page']
+    except:
+        integerPage = int(page) + 1
+        page = str(integerPage)
+
     for video in videos:
         # Create a list item with a text label and a thumbnail image.
         list_item = xbmcgui.ListItem(label=video['name'])
@@ -201,6 +233,7 @@ def list_videos(category,page):
         # Create a URL for the plugin recursive callback.
         # Example: plugin://plugin.video.example/?action=play&video=http://www.vidsplay.com/vids/crab.mp4
         url = '{0}?action=play&video={1}'.format(_url, video['video']).decode('utf-8')
+        url = smartUTF8(url).decode('utf-8')
         # Add the list item to a virtual Kodi folder.
         # is_folder = False means that this item won't open any sub-list.
         is_folder = False
@@ -220,8 +253,11 @@ def list_videos(category,page):
         if(cat[0].lower() == category.lower()):
             foundCat = cat[1]
             break
-
-    addDir(">>_next-page_>>",foundCat,1,"",page)
+    if videos.__len__() == 0:
+        msg = ">>no movies available, move to next page >>"
+    else:
+        msg = ">>_next-page_>>"
+    addDir(msg,foundCat,1,"",page)
     # Finish creating a virtual folder.
     xbmcplugin.endOfDirectory(_handle)
 
@@ -244,9 +280,11 @@ def router(paramstring):
     """
     # Parse a URL-encoded paramstring to the dictionary of
     # {<parameter>: <value>} elements
+    # paramstring = smartUTF8(paramstring).decode('utf-8')
     params = dict(parse_qsl(paramstring))
-    # Check the parameters passed to the plugin
+    print "paramaters"
     print params
+    # Check the parameters passed to the plugin
     if params:
         if params['action'] == str(1):
             # load more links
@@ -268,4 +306,5 @@ def router(paramstring):
 if __name__ == '__main__':
     # Call the router function and pass the plugin call parameters to it.
     # We use string slicing to trim the leading '?' from the plugin call paramstring
-    router(sys.argv[2][1:])
+    router(smartUTF8(sys.argv[2][1:]).decode('utf-8'))
+
