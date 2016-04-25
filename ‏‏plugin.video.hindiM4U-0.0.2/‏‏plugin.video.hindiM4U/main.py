@@ -3,23 +3,11 @@
 # License: GPL v.3 https://www.gnu.org/copyleft/gpl.html
 
 import sys
-import urllib
-import urlparse
 from urlparse import parse_qsl
 import xbmcgui
 import xbmcplugin
 import requests
 from bs4 import BeautifulSoup
-import unicodedata
-
-# Get the plugin url in plugin:// notation.
-_url = sys.argv[0]
-# Get the plugin handle as an integer number.
-_handle = int(sys.argv[1])
-args = urlparse.parse_qs(sys.argv[2][1:])
-
-CatsWithHrefs = {}
-catagories = []
 
 def smartUnicode(s):
     if not s:
@@ -45,9 +33,16 @@ def smartUnicode(s):
 def smartUTF8(s):
     return smartUnicode(s).encode('utf-8')
 
+# Get the plugin url in plugin:// notation.
+_url = sys.argv[0]
+# Get the plugin handle as an integer number.
+_handle = int(sys.argv[1])
+
+CatsWithHrefs = {}
+catagories = []
+
 def addDir(name,url,mode,iconimage,PageNumber):
     u=sys.argv[0]+"?url="+ url +"&action="+str(mode)+"&name="+name+"&page="+str(PageNumber)
-    u= smartUTF8(u).decode('utf-8')
     liz=xbmcgui.ListItem(unicode(name), iconImage="DefaultFolder.png",thumbnailImage=iconimage)
     liz.setInfo( type="Video", infoLabels={ "Title": name, 'year':"" })
     ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=True)
@@ -181,7 +176,7 @@ def list_categories():
         # Create a URL for the plugin recursive callback.
         # Example: plugin://plugin.video.example/?action=listing&category=Animals
         url = '{0}?action=listing&category={1}'.format(_url, category[0])
-        url = smartUTF8(url).decode('utf-8')
+        url = url.decode('utf-8')
         # is_folder = True means that this item opens a sub-list of lower level items.
         is_folder = True
         # Add our item to the listing as a 3-element tuple.
@@ -232,8 +227,8 @@ def list_videos(category,page):
         list_item.setProperty('IsPlayable', 'true')
         # Create a URL for the plugin recursive callback.
         # Example: plugin://plugin.video.example/?action=play&video=http://www.vidsplay.com/vids/crab.mp4
-        url = '{0}?action=play&video={1}'.format(_url, video['video']).decode('utf-8')
-        url = smartUTF8(url).decode('utf-8')
+        url = '{0}?action=play&video={1}'.format(_url, video['video'])
+        url = url.decode('utf-8')
         # Add the list item to a virtual Kodi folder.
         # is_folder = False means that this item won't open any sub-list.
         is_folder = False
@@ -264,10 +259,11 @@ def list_videos(category,page):
 def play_video(path):
     """
     Play a video by the provided path.
+
     :param path: str
     """
     # Create a playable item with a path to play.
-    play_item = xbmcgui.ListItem(path=path.decode('utf-8'))
+    play_item = xbmcgui.ListItem(path=path)
     # Pass the item to the Kodi player.
     xbmcplugin.setResolvedUrl(_handle, True, listitem=play_item)
 
@@ -282,6 +278,8 @@ def router(paramstring):
     # {<parameter>: <value>} elements
     # paramstring = smartUTF8(paramstring).decode('utf-8')
     params = dict(parse_qsl(paramstring))
+    print "-paramstring-"
+    print paramstring
     print "paramaters"
     print params
     # Check the parameters passed to the plugin
@@ -306,5 +304,5 @@ def router(paramstring):
 if __name__ == '__main__':
     # Call the router function and pass the plugin call parameters to it.
     # We use string slicing to trim the leading '?' from the plugin call paramstring
-    router(smartUTF8(sys.argv[2][1:]).decode('utf-8'))
+    router(sys.argv[2][1:])
 
