@@ -90,17 +90,25 @@ def get_links(html,page):
                     htm = moviedic["ref"]
                     rlink = requests.get(htm)
                     souplink = BeautifulSoup(rlink.content, "html.parser")
-                    movieLink = souplink.iframe['src']
+                    print "get movie link now"
+                    try:
+                        movieLink = souplink.iframe['src']
+                        print movieLink
+                        if movieLink.find('thevideobee') == -1:
+                            text = souplink.find('div', {"id": "video"}).contents[1].contents[3].text
+                            s = text[text.find('http://thevideobee.to'):]
+                            movieLink = s[:s.find('\\')]
+                            start = movieLink[:movieLink.rfind("/") + 1] + 'embed-'
+                            finish = movieLink[movieLink.rfind('/') + 1:]
+                            movieLink = start + finish
+                        i = 1
+                    except AttributeError:
+                        print "problem with movieLink"
+
                     movieCon = requests.get(movieLink)
                     soupMov = BeautifulSoup(movieCon.content, "html.parser")
                     try:
                         moviedic["video"] = soupMov.video.source["src"]
-                        # print moviedic["name"]
-                        # get movie's release date and synopses
-                        # -- --
-                        # temp = (souplink.find("div",class_="entry-content rich-content").contents[9].text).split(" ")
-                        # temp.reverse()
-                        # moviedic["reldate"] = temp[0]
                         index = moviedic["name"].rfind('(')
                         temp = moviedic["name"][index+1:moviedic["name"].__len__()-1]
                         moviedic["reldate"] = temp
@@ -110,9 +118,9 @@ def get_links(html,page):
                                     moviedic["syn"] = con.text.split(":")[1]
                                     break
                         linksList.append(moviedic)
-                    except AttributeError:
+                    except Exception as e:
                         moviedic["name"] = moviedic["name"] + " dead link"
-                        print moviedic["name"]
+                        print e.message
                     rlink.close()
             r.close()
     except requests.ConnectionError, requests.HTTPError:

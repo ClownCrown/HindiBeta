@@ -2,7 +2,7 @@
 <addon id="plugin.video.hindiM4U"
 version="1.0.0"
 name="HindiMovies4U"
-provider-name="Roman_V_M">
+provider-name="Liran">
 <requires>
   <import addon="xbmc.python" version="2.1.0"/>
   <import addon="script.module.requests" version="2.7.0" />
